@@ -18,6 +18,7 @@
 #include <utility>
 #include <stdexcept>
 #include <boost/lexical_cast.hpp>
+#include <boost/iterator/transform_iterator.hpp>
 
 namespace jrb_json{
 
@@ -41,6 +42,7 @@ namespace jrb_json{
 
 
 
+
 	inline null_t null(){return null_t();}
 
 	struct object_holder{
@@ -49,9 +51,9 @@ namespace jrb_json{
 		const object_type& get()const{return o_;}
 		operator const object_type&()const{return get();}
 
-		object_type& operator ()(const std::string& name, const value& d){
+		object_holder& operator ()(const std::string& name, const value& d){
 			o_[name] = d;
-			return o_;
+			return *this;
 		}
 	private:
 		object_type o_;
@@ -59,6 +61,21 @@ namespace jrb_json{
 	};
 
 	struct value{
+
+	private:
+		struct array_transform{
+			const value& operator()(const array_type::value_type& v)const{
+				return v.get();
+			}
+		};
+		struct object_transform
+		{
+			const std::pair<const std::string&,const value&> operator() (const object_type::value_type& v)const{
+				return std::pair<const std::string& ,const value&>(v.first,v.second.get());
+			}
+
+		};
+	public:
 
 		value(){assign(null_t());}
 
@@ -124,6 +141,15 @@ namespace jrb_json{
 				throw std::out_of_range("value[name] not found");
 			}
 		}
+		typedef boost::transform_iterator<array_transform,array_type::const_iterator,const value&,value> array_iterator;
+		typedef boost::transform_iterator<object_transform,object_type::const_iterator,const std::pair<const std::string&,const value&>,std::pair<const std::string&,const value&> > object_iterator;
+
+
+
+		array_iterator array_begin(){return array_iterator(get_exact<array_type>().cbegin(),array_transform());}
+		array_iterator array_end(){return array_iterator(get_exact<array_type>().cend(),array_transform());}
+		object_iterator object_begin(){return  object_iterator(get_exact<object_type>().cbegin(),object_transform());}
+		object_iterator object_end(){return  object_iterator(get_exact<object_type>().cend(),object_transform());}
 
 		void push_back(const value& d)
 		{
@@ -151,6 +177,8 @@ namespace jrb_json{
 		void assign(const T& t){ptr_.reset(new value_holder(t));}
 		void assign(const object_holder& o){ptr_.reset(new value_holder(o.get()));}
 		void assign(null_t n){ptr_.reset(new value_holder(null_t()));}
+
+
 
 
 		template<class Type>

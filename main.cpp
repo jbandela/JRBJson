@@ -61,6 +61,20 @@ int main(){
 
 	std::cout << pretty_json_string(d9) << "\n\n";
 	
+
+	value a1 = array(1,2,3,4);
+	value o1 = object("a",1)("b",2)("c",3);
+	for(auto i = a1.array_begin(); i != a1.array_end(); i++){
+		std::cout << i->get<int>() << " ";
+	}
+	std::cout << "\n\n";
+	
+	for(auto i = o1.object_begin(); i != o1.object_end(); i++){
+		auto v = i->second;
+		std::cout << i->first << " " << v.get<int>() << " ";
+	}
+	std::cout << "\n\n";
+
 	int k;
 	std::cin >> k;
 
